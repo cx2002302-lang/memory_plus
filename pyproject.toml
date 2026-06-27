@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "svm"
+version = "0.1.0"
+description = "Structured Visual Memory - LLM memory management for Agent frameworks"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+yaml = ["pyyaml>=6.0"]
+test = ["pytest>=7.0"]
+
+[project.scripts]
+svm = "svm.cli:main"
