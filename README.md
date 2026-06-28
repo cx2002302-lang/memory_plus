@@ -48,7 +48,13 @@
 
 ## 🚀 快速开始
 
-### 安装
+### AI Agent 一句话安装
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/cx2002302-lang/memory_plus/master/scripts/quick-install.sh | bash
+```
+
+### pip 安装
 
 ```bash
 pip install memory-plus
