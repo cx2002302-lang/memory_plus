@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.1] - 2026-06-28
+
+### Fixed
+- **FTS5 search query**: corrected `n.rowid IN (SELECT rowid FROM zettel_fts ...)` to `n.id IN (SELECT id FROM zettel_fts ...)` — FTS5 rowid is auto-generated and unrelated to zettel_notes rowid; the correct join key is the TEXT `id` column
+- **KeywordMatcher return type**: tuples changed to plain strings (backward-compatible)
+- **`load_block()` tenant-awareness**: now correctly filters by tenant_id
+- **Test mock column names**: `link_count`/`access_count` → `backlink_count`/`outgoing_link_count` to match actual ZK schema
+
+### Added
+- Data safety section in README (schema compatibility guarantees)
+- `scripts/quick-install.sh` — curl|bash one-command install for AI Agent
+
 ## [0.2.0] - 2026-06-28
 
 ### Added
@@ -20,12 +32,6 @@
 - PersistentStore schema migrated with sync columns
 - RAM profiles updated with admission control parameters
 - All Docker containers (Hermes + OpenClaw 3 versions) have SVM installed
-
-### Fixed
-- **FTS5 search query**: corrected `n.rowid IN (SELECT rowid FROM zettel_fts ...)` to `n.id IN (SELECT id FROM zettel_fts ...)` — FTS5 rowid is auto-generated and unrelated to zettel_notes rowid; the correct join key is the TEXT `id` column
-- **KeywordMatcher return type**: tuples changed to plain strings (backward-compatible)
-- **`load_block()` tenant-awareness**: now correctly filters by tenant_id
-- **Test mock column names**: `link_count`/`access_count` → `backlink_count`/`outgoing_link_count` to match actual ZK schema
 
 ## [0.1.0] - 2026-06-20
 
