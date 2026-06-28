@@ -174,8 +174,8 @@ class ZKDatabase:
                 params.append(tag)
 
         if query and query != "*":
-            q_sql = "SELECT rowid FROM zettel_fts WHERE zettel_fts MATCH ?"
-            wheres.append(f"n.rowid IN ({q_sql})")
+            q_sql = "SELECT id FROM zettel_fts WHERE zettel_fts MATCH ?"
+            wheres.append(f"n.id IN ({q_sql})")
             params.append(query)
 
         if folder:

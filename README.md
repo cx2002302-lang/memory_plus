@@ -113,6 +113,25 @@ svm-deploy
 
 ---
 
+## 🛡️ 数据安全
+
+Memory Plus 与 Zettelkasten 双向同步遵循以下安全原则：
+
+| 操作 | 安全策略 |
+|------|---------|
+| **SVM → ZK 写入** | 仅 INSERT，永不 UPDATE/DELETE/DROP |
+| **ZK → SVM 读取** | 只读 QUERY，不修改 ZK 数据 |
+| **标签写入** | `INSERT OR IGNORE`，不覆盖已有标签 |
+| **淘汰保护** | LRU 淘汰前先同步到 ZK，防止数据丢失 |
+| **准入控制** | 内存使用率 ≥ 80% 时拒绝低权重（< 0.1）写操作 |
+| **FTS5 搜索** | 使用 `n.id IN (SELECT id FROM zettel_fts ...)` 确保 rowid 正确映射 |
+
+> ⚠ **重要警告**：切勿在已有数据的 ZK 数据库上运行 `openclaw zk init`。
+> `migrateNotesTableForArchive()` 可能重新创建 `zettel_notes` 表并导致数据丢失。
+> 详见 [Schema 兼容性文档](../../docs/architecture.md#schema-compatibility)。
+
+---
+
 ## 📁 项目结构
 
 ```

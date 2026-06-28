@@ -38,11 +38,11 @@ def _build_mock_zk_db(db_path: str):
     conn.execute(
         "CREATE TABLE zettel_note_stats ("
         "  note_id TEXT PRIMARY KEY, glow_status TEXT, glow_score REAL,"
-        "  link_count INTEGER, access_count INTEGER"
+        "  backlink_count INTEGER, outgoing_link_count INTEGER"
         ")"
     )
     conn.execute(
-        "CREATE VIRTUAL TABLE zettel_fts USING fts5(title, content, content=zettel_notes)"
+        "CREATE VIRTUAL TABLE zettel_fts USING fts5(title, content, id UNINDEXED, type UNINDEXED)"
     )
     conn.execute(
         "INSERT INTO zettel_tags (name, created_at) VALUES (?, ?)",
@@ -72,6 +72,10 @@ def _build_mock_zk_db(db_path: str):
             "INSERT INTO zettel_note_tags (note_id, tag_id) VALUES (?, ?)",
             (nid, hot_tag_id),
         )
+        conn.execute(
+            "INSERT INTO zettel_fts (id, title, content) VALUES (?, ?, ?)",
+            (nid, f"Important note {i}", f"Content of important note {i}"),
+        )
     for i in range(3):
         nid = f"note_rec_{i:03d}"
         conn.execute(
@@ -86,6 +90,10 @@ def _build_mock_zk_db(db_path: str):
                 "2026-06-27T00:00:00",
                 "2026-06-28T00:00:00",
             ),
+        )
+        conn.execute(
+            "INSERT INTO zettel_fts (id, title, content) VALUES (?, ?, ?)",
+            (nid, f"Recent note {i}", f"Content of recent note {i}"),
         )
     for i in range(2):
         nid = f"note_ev_{i:03d}"
@@ -103,12 +111,14 @@ def _build_mock_zk_db(db_path: str):
             ),
         )
         conn.execute(
-            "INSERT INTO zettel_note_stats (note_id, glow_status, glow_score, link_count, access_count) "
+            "INSERT INTO zettel_note_stats (note_id, glow_status, glow_score, backlink_count, outgoing_link_count) "
             "VALUES (?, ?, ?, ?, ?)",
             (nid, "evergreen" if i == 0 else "active", 0.9 - i * 0.1, 10, 50),
         )
-    conn.commit()
-    conn.execute("INSERT INTO zettel_fts(zettel_fts) VALUES('rebuild')")
+        conn.execute(
+            "INSERT INTO zettel_fts (id, title, content) VALUES (?, ?, ?)",
+            (nid, f"Evergreen note {i}", f"Content of evergreen note {i}"),
+        )
     conn.commit()
     conn.close()
 
