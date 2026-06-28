@@ -1,45 +1,155 @@
-# Memory Plus
+<p align="center">
+  <img src="docs/assets/memory_plus_rich_cover.png" alt="Memory Plus" width="100%">
+</p>
 
-Structured Visual Memory (SVM) — a memory management component for LLM Agent frameworks, with Zettelkasten synchronization.
+# 🧠 Memory Plus
 
-## Features
+> **一个为 [OpenClaw](https://github.com/openclaw) 和 [Hermes Agent](https://github.com/nousresearch/hermes-agent) 设计的记忆管理组件**，基于 SVM（Structured Visual Memory）架构，集成 Zettelkasten 知识笔记双向同步，让 AI Agent 拥有持久化、可检索的结构化记忆。
 
-- **Memory Store**: In-memory LRU cache with SQLite persistence, multi-tenant isolation
-- **Keyword Matching**: Aho-Corasick fast multi-pattern matching (pyahocorasick or pure-Python fallback)
-- **Audit Logging**: SQLite-backed event log for store/recall/forget/config operations
-- **Zettelkasten Sync**: Bidirectional sync — SVM→ZK (cold backup) + ZK→SVM (hot-load important/recent/evergreen notes)
-- **Evict-Sync Protection**: Blocks are synced to ZK before eviction
-- **Admission Control**: Protects high-weight memories from low-weight bulk writes
-- **Import**: Migrate existing OpenClaw memory chunks (`svm import`)
-- **MCP Server**: stdio-based MCP server for integration with agent frameworks
-- **CLI**: Full command-line interface with JSON output
+[English](README.en.md) · **简体中文**
 
-## CLI Usage
+[![Version](https://img.shields.io/badge/version-v0.2.0-blue.svg)](https://github.com/cx2002302-lang/memory_plus/releases)
+[![OpenClaw](https://img.shields.io/badge/OpenClaw-2026.4.x/2026.6.x-green.svg)](https://github.com/openclaw)
+[![Hermes](https://img.shields.io/badge/Hermes%20Agent-v0.17.0-blueviolet.svg)](https://github.com/nousresearch/hermes-agent)
+[![MCP Server](https://img.shields.io/badge/MCP-6%20Tools-orange.svg)](svm/mcp_server.py)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/python-%3E%3D3.10-blue.svg)](pyproject.toml)
 
-```bash
-svm store --key my_key --value "content"
-svm recall --keyword kw1 --keyword kw2
-svm sync auto
-svm import --source ~/.openclaw/memory/main.sqlite
-svm search "keyword"
-svm stats
-```
+---
 
-## Install
+## ✨ 核心功能
+
+| 功能 | 描述 |
+|------|------|
+| 🧠 **内存存储** | 内存 LRU 缓存 + SQLite 持久化，支持多租户隔离 |
+| 🔍 **关键词匹配** | Aho-Corasick 多模式匹配引擎（pyahocorasick / 纯 Python 回退） |
+| 📋 **审计日志** | SQLite 存储的 store/recall/forget/config 操作事件日志 |
+| 🔄 **Zettelkasten 同步** | 双向同步：SVM→ZK（冷数据备份）+ ZK→SVM（热加载重要/近期/常青笔记） |
+| 🛡️ **淘汰保护** | LRU 淘汰前自动同步到 ZK，防止数据丢失 |
+| ⚖️ **准入控制** | 可配置最低权重和压力阈值，保护高价值记忆 |
+| 📥 **导入迁移** | `svm import` 命令，将旧版 OpenClaw 记忆 chunks 迁移为 SVM 内存块 |
+| 🔌 **MCP Server** | 内置 stdio 协议的 MCP 服务，接入 Hermes / OpenClaw 等 Agent 框架 |
+| 🐳 **Docker 支持** | 4 种容器环境预装 SVM（Hermes + 3 版本 OpenClaw） |
+| 🎯 **命令行** | 完整的 CLI 界面，支持 JSON 输出，跨语言调用 |
+
+---
+
+## ⚡ 性能基准
+
+**测试环境**: Python 3.12.3, SQLite WAL  
+**测试规模**: 553K blocks/sec 存储 · 52K matches/sec Aho-Corasick（5000 关键词）  
+**当前测试套件**: 80 个单元测试全部通过 ✅
+
+---
+
+> 🇺🇸 **Looking for English documentation?** [Click here for English](README.en.md)
+
+---
+
+## 🚀 快速开始
+
+### 安装
 
 ```bash
 pip install memory-plus
 ```
 
-Or for development:
+或从源码安装（推荐开发模式）：
 
 ```bash
-git clone <repo>
+git clone https://github.com/cx2002302-lang/memory_plus.git
 cd memory_plus
 pip install -e ".[test]"
+
+# 运行测试
 pytest tests/
 ```
 
-## License
+### CLI 基本用法
 
-MIT
+```bash
+# 存储记忆
+svm store --key my_key --value "记忆内容"
+
+# 检索记忆
+svm recall --keyword kw1 --keyword kw2
+
+# 与 Zettelkasten 同步
+svm sync auto
+
+# 导入旧版记忆
+svm import --source ~/.openclaw/memory/main.sqlite
+
+# 搜索（SVM + ZK）
+svm search "关键词"
+
+# 查看状态
+svm stats
+```
+
+### Docker 部署
+
+```bash
+# 使用 svm-deploy skill（需要先安装 skill）
+svm-deploy
+
+# 或手动挂载：
+#   svm 数据库路径: ~/.openclaw/svm/memory.db
+#   ZK 数据库路径: ~/.openclaw/zettelkasten/zettelkasten.db
+```
+
+---
+
+## 🧩 MCP 工具（用于 AI Agent）
+
+| 工具 | 权限 | 描述 |
+|------|------|------|
+| `svm_store` | 写入 | 存储一个记忆块 |
+| `svm_recall` | 读取 | 按关键词检索记忆块 |
+| `svm_forget` | 写入 | 删除指定记忆块 |
+| `svm_list` | 读取 | 列出所有记忆块 |
+| `svm_stats` | 读取 | 获取内存统计信息 |
+| `svm_audit` | 读取 | 查询审计日志 |
+
+---
+
+## 📁 项目结构
+
+```
+memory_plus/
+├── svm/                     # Python 模块
+│   ├── __init__.py          # 版本号
+│   ├── cli.py               # CLI 入口
+│   ├── config.py            # 配置管理（预设、自动检测内存）
+│   ├── audit.py             # 审计日志
+│   ├── exceptions.py        # 异常体系
+│   ├── injector.py          # 上下文注入器
+│   ├── mcp_server.py        # MCP 服务
+│   ├── models/              # 数据模型
+│   │   └── block.py         # MemoryBlock（核心内存块）
+│   ├── store/               # 存储层
+│   │   ├── memory_store.py  # 内存 LRU 缓存
+│   │   └── persistent.py    # SQLite 持久化
+│   ├── sync/                # Zettelkasten 同步引擎
+│   │   ├── engine.py        # 同步编排
+│   │   └── zk_sync.py       # ZK 数据库读写
+│   └── trigger/             # 检索触发
+│       ├── matcher.py       # Aho-Corasick 关键词匹配
+│       └── strategy.py      # 检索策略
+├── tests/                   # 测试套件
+│   ├── test_basic.py        # 58 个基础测试
+│   ├── test_import.py       # 8 个导入测试
+│   ├── test_sync.py         # 18 个同步测试
+│   └── test_perf.py         # 性能基准测试
+├── image/                   # 配图
+├── docs/                    # 文档
+├── CHANGELOG.md
+├── LICENSE
+└── README.md
+```
+
+---
+
+## 📜 许可证
+
+[MIT](LICENSE) © Memory Plus Contributors
