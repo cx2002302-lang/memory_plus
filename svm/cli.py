@@ -279,6 +279,82 @@ class SVMApp:
         finally:
             zk.close()
 
+    def cmd_import_openclaw_memory(
+        self,
+        source: str = "~/.openclaw/memory/main.sqlite",
+        dry_run: bool = False,
+        tenant_id: Optional[str] = None,
+    ) -> Dict:
+        import datetime
+        import sqlite3
+
+        src_path = os.path.expanduser(source)
+        if not os.path.isfile(src_path):
+            return {"status": "error", "message": f"Source not found: {src_path}"}
+
+        tid = tenant_id or self.store.tenant_id
+        now = datetime.datetime.now()
+        conn = sqlite3.connect(src_path)
+        try:
+            chunks = conn.execute(
+                "SELECT id, path, source, start_line, end_line, text, updated_at FROM chunks ORDER BY updated_at ASC"
+            ).fetchall()
+        except sqlite3.OperationalError as e:
+            return {"status": "error", "message": f"Cannot read chunks table: {e}"}
+        finally:
+            conn.close()
+
+        total = len(chunks)
+        imported = 0
+        skipped = 0
+        errors = 0
+        for idx, (cid, path, src, start, end, text, updated_at) in enumerate(chunks):
+            if not text or not text.strip():
+                skipped += 1
+                continue
+            key = f"{path}:{start}"
+            existing = self.persistent.load_block(key, tenant_id=tid)
+            if existing is not None:
+                skipped += 1
+                continue
+            orig_ts = datetime.datetime.fromtimestamp(
+                (updated_at or 0) / 1000
+            ) if updated_at else now
+            age_hours = (now - orig_ts).total_seconds() / 3600
+            weight = max(0.1, 1.0 - (age_hours / (365 * 24)))
+            block = MemoryBlock(
+                key=key,
+                value=text.strip(),
+                created_at=orig_ts,
+                weight=weight,
+                slot_id="imported:openclaw-memory",
+                task_id=None,
+                tenant_id=tid,
+            )
+            if not dry_run:
+                try:
+                    self.store.store(block)
+                    self.persistent.save_block(block)
+                    imported += 1
+                except Exception:
+                    errors += 1
+            else:
+                imported += 1
+
+            if (idx + 1) % 100 == 0 or idx == total - 1:
+                logger.info(f"Import progress: {idx + 1}/{total} ({imported} imported, {skipped} skipped, {errors} errors)")
+
+        return {
+            "status": "ok" if not errors else "partial",
+            "source": src_path,
+            "total": total,
+            "imported": imported,
+            "skipped": skipped,
+            "errors": errors,
+            "dry_run": dry_run,
+            "tenant_id": tid,
+        }
+
     def cmd_search(
         self,
         query: str,
@@ -401,6 +477,14 @@ def build_parser() -> argparse.ArgumentParser:
     p_mark = sub.add_parser("mark-important", help="Mark a ZK note as important")
     p_mark.add_argument("--note-id", required=True)
 
+    p_import_ = sub.add_parser("import", help="Import memory from external sources")
+    p_import_.add_argument(
+        "--source", default="~/.openclaw/memory/main.sqlite",
+        help="OpenClaw memory SQLite database path",
+    )
+    p_import_.add_argument("--dry-run", action="store_true", help="Preview only, no writes")
+    p_import_.add_argument("--tenant", dest="tenant_id")
+
     p_search = sub.add_parser("search", help="Search SVM and ZK notes")
     p_search.add_argument("query", nargs="?", default="", help="Keyword search query")
     p_search.add_argument("--folder")
@@ -496,6 +580,14 @@ def main(argv: Optional[List[str]] = None) -> int:
 
         elif args.command == "mark-important":
             output = app.cmd_mark_important(note_id=args.note_id)
+
+        elif args.command == "import":
+            result = app.cmd_import_openclaw_memory(
+                source=args.source,
+                dry_run=args.dry_run,
+                tenant_id=args.tenant_id,
+            )
+            output = result
 
         elif args.command == "search":
             result = app.cmd_search(
@@ -608,6 +700,19 @@ def _print_human(output: dict, command: str) -> None:
 
     elif command == "mark-important":
         print(f"Note {output.get('note_id')}: {'marked important' if output.get('status') == 'ok' else 'failed'}")
+
+    elif command == "import":
+        status = output.get("status", "error")
+        if status == "error":
+            print(f"Import failed: {output.get('message', 'unknown')}")
+            return
+        prefix = "[DRY RUN] " if output.get("dry_run") else ""
+        print(f"{prefix}Import from: {output.get('source')}")
+        print(f"  Total chunks: {output.get('total', 0)}")
+        print(f"  Imported:     {output.get('imported', 0)}")
+        print(f"  Skipped:      {output.get('skipped', 0)}")
+        print(f"  Errors:       {output.get('errors', 0)}")
+        print(f"  Tenant:       {output.get('tenant_id', 'default')}")
 
     elif command == "search":
         svm = output.get("svm", [])

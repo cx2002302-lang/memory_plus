@@ -142,8 +142,13 @@ class PersistentStore:
             blocks.append(block)
         return blocks
 
-    def load_block(self, key: str) -> Optional[MemoryBlock]:
-        cursor = self._conn.execute("SELECT * FROM memory_blocks WHERE key = ?", (key,))
+    def load_block(self, key: str, tenant_id: Optional[str] = None) -> Optional[MemoryBlock]:
+        if tenant_id:
+            cursor = self._conn.execute(
+                "SELECT * FROM memory_blocks WHERE key = ? AND tenant_id = ?", (key, tenant_id)
+            )
+        else:
+            cursor = self._conn.execute("SELECT * FROM memory_blocks WHERE key = ?", (key,))
         row = cursor.fetchone()
         return self._row_to_block(row) if row else None
 

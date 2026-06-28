@@ -1,0 +1,39 @@
+# Changelog
+
+## [0.2.0] - 2026-06-28
+
+### Added
+- Sync engine (`svm.sync.engine`, `svm.sync.zk_sync`): bidirectional SVM ↔ Zettelkasten sync
+- CLI commands: `sync`, `sync-status`, `mark-important`, `search`
+- Evict-sync protection: blocks synced to ZK before eviction
+- Admission control: configurable min-weight and pressure ratio to protect existing memories
+- `svm import` command: migrate old OpenClaw main.sqlite chunks to SVM blocks (idempotent)
+- MCP server integrated at `svm/mcp_server.py` (moved from `~/.openclaw/`)
+- Comprehensive test suite for sync engine (8 tests for import, 18 for sync)
+- `svm-deploy` skill for agent-based one-command deployment
+- CHANGELOG.md and version management
+
+### Changed
+- Project renamed from `svm` to `memory_plus` (pip install); Python module remains `svm`
+- Dependencies `pyyaml` and `pyahocorasick` moved from optional to core
+- MemoryBlock extended with `zk_note_id` and `synced_at` fields
+- PersistentStore schema migrated with sync columns
+- RAM profiles updated with admission control parameters
+- All Docker containers (Hermes + OpenClaw 3 versions) have SVM installed
+
+## [0.1.0] - 2026-06-20
+
+### Added
+- Initial MVP: MemoryBlock, MemoryStore (LRU), SQLite persistence, KeywordMatcher (Aho-Corasick)
+- CLI with store/recall/forget/list/stats/config/audit commands
+- Multi-tenant isolation on all storage paths
+- Audit logging (SQLite-backed)
+- Exception hierarchy (SVMError, BlockNotFoundError, ConfigError, TenantMismatchError)
+- Config presets with auto-detect system memory
+- 58 unit tests passing
+- Performance benchmarks (553K blocks/sec store, 52K matches/sec AC)
+- MCP server at `~/.openclaw/svm-mcp-server.py`
+- SVM skill at `~/.openclaw/skills/svm-memory/SKILL.md`
+- Docker deployment docs
+- Hermes container integration via MCP Server (6 tools, 49ms)
+- OpenClaw 3-version container test environment

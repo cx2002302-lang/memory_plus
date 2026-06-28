@@ -125,7 +125,7 @@ class KeywordMatcher:
             if not self._ac_ready:
                 self._ac.make_automaton()
                 self._ac_ready = True
-            return list(dict.fromkeys(self._ac.iter(text_lower)))
+            return list(dict.fromkeys(kw for _, kw in self._ac.iter(text_lower)))
         else:
             if not self._ac_py_ready:
                 self._ac_py.build()
