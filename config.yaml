@@ -1,9 +1,0 @@
-profile: 标准
-# max_memory_mb: 2048  # uncomment to override profile auto-detection
-data_dir: ~/.openclaw/svm
-persistent_db: memory.db
-default_ttl: null
-default_weight: 0.5
-recall_top_n: 10
-recall_max_tokens: 4096
-log_level: INFO
